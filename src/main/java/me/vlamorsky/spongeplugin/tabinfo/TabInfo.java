@@ -23,12 +23,12 @@ import java.nio.file.Path;
 @Plugin(
         id = "tab-info",
         name = "Tab Info",
-        version = "1.0.0",
+        version = "1.0.1",
         description = "Tab Info plugin for Sponge")
 public class TabInfo {
 
     private static TabInfo instance = null;
-    public final static String VERSION = "1.0.0";
+    public final static String VERSION = "1.0.1";
     public final static String NAME = "Tab Info";
 
     private Logger logger;
@@ -111,12 +111,12 @@ public class TabInfo {
         footerText = Text.of("\n");
         if (config.FOOTER_ONLINE_ENABLED) {
             footerText = footerText.concat(
-                    textFromLegacy("  &7online: &6" + Sponge.getServer().getOnlinePlayers().size() + "  "));
+                    textFromLegacy("  " + config.FOOTER_ONLINE_CONTENT + Sponge.getServer().getOnlinePlayers().size() + "  "));
         }
 
         if (config.FOOTER_TPS_ENABLED) {
             footerText = footerText.concat(
-                    textFromLegacy("  &7tps: &6" + Sponge.getServer().getTicksPerSecond() + "  "));
+                    textFromLegacy("  " + config.FOOTER_TPS_CONTENT + Sponge.getServer().getTicksPerSecond() + "  "));
         }
 
         Sponge.getServer().getOnlinePlayers().forEach(player -> {
@@ -141,7 +141,7 @@ public class TabInfo {
 
     public Text getFooterText(int latency) {
         if (config.FOOTER_PING_ENABLED) {
-            return footerText.concat(textFromLegacy("  &7ping: &2" + latency + "&7ms  "));
+            return footerText.concat(textFromLegacy("  " + config.FOOTER_PING_CONTENT + latency + config.FOOTER_PING_MS_CONTENT + "  "));
         }
 
         return footerText;

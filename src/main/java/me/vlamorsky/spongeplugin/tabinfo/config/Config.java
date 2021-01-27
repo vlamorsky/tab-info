@@ -17,8 +17,14 @@ public class Config {
     public String HEADER_CONTENT;
 
     public boolean FOOTER_ONLINE_ENABLED;
+    public String FOOTER_ONLINE_CONTENT;
+
     public boolean FOOTER_TPS_ENABLED;
+    public String FOOTER_TPS_CONTENT;
+
     public boolean FOOTER_PING_ENABLED;
+    public String FOOTER_PING_CONTENT;
+    public String FOOTER_PING_MS_CONTENT;
 
     public Config(Path path) throws IOException, ObjectMappingException {
 
@@ -40,22 +46,54 @@ public class Config {
 
 
 
-
         FOOTER_ONLINE_ENABLED = check(
                 node.getNode("footer", "online-enabled"),
                 true,
                 "[true/false]")
                 .getBoolean();
 
+        FOOTER_ONLINE_CONTENT = check(
+                node.getNode("footer", "online-content"),
+                "&7online: &6",
+                "Footer, 'online' content")
+                .getString();
+
+
+
+
         FOOTER_TPS_ENABLED = check(
                 node.getNode("footer", "tps-enabled"),
                 true)
                 .getBoolean();
 
+        FOOTER_TPS_CONTENT = check(
+                node.getNode("footer", "tps-content"),
+                "&7tps: &6",
+                "Footer, 'tps' content")
+                .getString();
+
+
+
+
         FOOTER_PING_ENABLED = check(
                 node.getNode("footer", "ping-enabled"),
                 true)
                 .getBoolean();
+
+        FOOTER_PING_CONTENT = check(
+                node.getNode("footer", "ping-content"),
+                "&7ping: &2",
+                "Footer, 'ping' content")
+                .getString();
+
+        FOOTER_PING_MS_CONTENT = check(
+                node.getNode("footer", "ping-ms-content"),
+                "&7ms",
+                "Footer, ping 'ms' content")
+                .getString();
+
+
+
 
         loader.save(node);
     }
