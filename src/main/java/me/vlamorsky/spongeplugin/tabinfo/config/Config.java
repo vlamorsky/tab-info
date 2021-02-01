@@ -26,6 +26,12 @@ public class Config {
     public String FOOTER_PING_CONTENT;
     public String FOOTER_PING_MS_CONTENT;
 
+    public boolean FOOTER_WORLD_ENABLED;
+    public String FOOTER_WORLD_CONTENT;
+
+    public boolean FOOTER_CUSTOM_ENABLED;
+    public String FOOTER_CUSTOM_CONTENT;
+
     public Config(Path path) throws IOException, ObjectMappingException {
 
         this.path = path;
@@ -90,6 +96,34 @@ public class Config {
                 node.getNode("footer", "ping-ms-content"),
                 "&7ms",
                 "Footer, ping 'ms' content")
+                .getString();
+
+
+
+
+        FOOTER_WORLD_ENABLED = check(
+                node.getNode("footer", "world-enabled"),
+                false)
+                .getBoolean();
+
+        FOOTER_WORLD_CONTENT = check(
+                node.getNode("footer", "world-content"),
+                "\n&7world name: &6",
+                "Footer, 'world' content, \"\\n\" - for new tab line (works in other settings too)")
+                .getString();
+
+
+
+
+        FOOTER_CUSTOM_ENABLED = check(
+                node.getNode("footer", "custom-enabled"),
+                false)
+                .getBoolean();
+
+        FOOTER_CUSTOM_CONTENT = check(
+                node.getNode("footer", "custom-content"),
+                "\n\n&awww&2.&atestserver&2.&acom",
+                "Footer, custom content")
                 .getString();
 
 

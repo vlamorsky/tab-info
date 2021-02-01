@@ -24,6 +24,6 @@ public class PlayerJoinListener implements EventListener<ClientConnectionEvent.J
 
         player.getTabList().setHeaderAndFooter(
                 TabInfo.getInstance().getHeaderText(),
-                TabInfo.getInstance().getFooterText(player.getConnection().getLatency()));
+                TabInfo.getInstance().getFooterText(player));
     }
 }

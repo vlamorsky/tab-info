@@ -6,7 +6,7 @@
 
     <groupId>me.vlamorsky.spongeplugin</groupId>
     <artifactId>tabinfo</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
     <name>tab-info</name>
     <packaging>jar</packaging>
 

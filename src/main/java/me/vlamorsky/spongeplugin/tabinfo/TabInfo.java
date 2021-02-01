@@ -10,6 +10,7 @@ import org.spongepowered.api.Game;
 import org.spongepowered.api.Sponge;
 import org.spongepowered.api.command.spec.CommandSpec;
 import org.spongepowered.api.config.DefaultConfig;
+import org.spongepowered.api.entity.living.player.Player;
 import org.spongepowered.api.event.Listener;
 import org.spongepowered.api.event.game.state.*;
 import org.spongepowered.api.event.network.ClientConnectionEvent;
@@ -23,12 +24,12 @@ import java.nio.file.Path;
 @Plugin(
         id = "tab-info",
         name = "Tab Info",
-        version = "1.0.1",
+        version = "1.0.2",
         description = "Tab Info plugin for Sponge")
 public class TabInfo {
 
     private static TabInfo instance = null;
-    public final static String VERSION = "1.0.1";
+    public final static String VERSION = "1.0.2";
     public final static String NAME = "Tab Info";
 
     private Logger logger;
@@ -123,7 +124,7 @@ public class TabInfo {
             player.getTabList()
                     .setHeaderAndFooter(
                             headerText,
-                            getFooterText(player.getConnection().getLatency()));
+                            getFooterText(player));
         });
     }
 
@@ -139,12 +140,25 @@ public class TabInfo {
         return headerText;
     }
 
-    public Text getFooterText(int latency) {
+    public Text getFooterText(Player player) {
+
+        Text newFooterText = footerText;
         if (config.FOOTER_PING_ENABLED) {
-            return footerText.concat(textFromLegacy("  " + config.FOOTER_PING_CONTENT + latency + config.FOOTER_PING_MS_CONTENT + "  "));
+            newFooterText =  newFooterText.
+                    concat(textFromLegacy("  " + config.FOOTER_PING_CONTENT + player.getConnection().getLatency() + config.FOOTER_PING_MS_CONTENT + "  "));
         }
 
-        return footerText;
+        if (config.FOOTER_WORLD_ENABLED) {
+            newFooterText = newFooterText.concat(
+                    textFromLegacy(config.FOOTER_WORLD_CONTENT + player.getWorld().getName()));
+        }
+
+        if (config.FOOTER_CUSTOM_ENABLED) {
+            newFooterText = newFooterText.concat(
+                    textFromLegacy(config.FOOTER_CUSTOM_CONTENT));
+        }
+
+        return newFooterText;
     }
 
     public Logger getLogger() {
