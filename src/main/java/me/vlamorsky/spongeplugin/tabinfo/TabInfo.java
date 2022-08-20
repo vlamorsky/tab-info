@@ -1,85 +1,99 @@
 package me.vlamorsky.spongeplugin.tabinfo;
 
 import com.google.inject.Inject;
-import me.vlamorsky.spongeplugin.tabinfo.command.Reload;
 import me.vlamorsky.spongeplugin.tabinfo.config.Config;
-import me.vlamorsky.spongeplugin.tabinfo.config.Permissions;
 import me.vlamorsky.spongeplugin.tabinfo.listener.PlayerJoinListener;
-import org.slf4j.Logger;
-import org.spongepowered.api.Game;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.TextComponent;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+import org.apache.logging.log4j.Logger;
+import org.spongepowered.api.Server;
 import org.spongepowered.api.Sponge;
-import org.spongepowered.api.command.spec.CommandSpec;
+import org.spongepowered.api.command.Command;
 import org.spongepowered.api.config.DefaultConfig;
-import org.spongepowered.api.entity.living.player.Player;
+import org.spongepowered.api.entity.living.player.server.ServerPlayer;
 import org.spongepowered.api.event.Listener;
-import org.spongepowered.api.event.game.state.*;
-import org.spongepowered.api.event.network.ClientConnectionEvent;
-import org.spongepowered.api.plugin.Plugin;
+import org.spongepowered.api.event.lifecycle.RefreshGameEvent;
+import org.spongepowered.api.event.lifecycle.RegisterCommandEvent;
+import org.spongepowered.api.event.lifecycle.StartingEngineEvent;
 import org.spongepowered.api.scheduler.Task;
-import org.spongepowered.api.text.Text;
-import org.spongepowered.api.text.serializer.TextSerializers;
+import org.spongepowered.api.util.Ticks;
+import org.spongepowered.plugin.PluginContainer;
+import org.spongepowered.plugin.builtin.jvm.Plugin;
 
+import java.io.IOException;
 import java.nio.file.Path;
 
-@Plugin(
-        id = "tab-info",
-        name = "Tab Info",
-        version = "1.0.2",
-        description = "Tab Info plugin for Sponge")
+@Plugin("tab-info")
 public class TabInfo {
 
     private static TabInfo instance = null;
-    public final static String VERSION = "1.0.2";
-    public final static String NAME = "Tab Info";
+
+    private final PluginContainer pluginContainer;
 
     private Logger logger;
-    private Game game;
 
     private Config config;
     private Path path;
 
-    private Text headerText = Text.EMPTY;
-    private Text footerText = Text.EMPTY;
+    private TextComponent headerText;
+    private TextComponent footerText;
 
     @Inject
-    public TabInfo(Game game,
-                   Logger logger_,
+    public TabInfo(final PluginContainer pluginContainer,
+                   final Logger logger,
                    @DefaultConfig(sharedRoot = false) Path path) {
 
-        TabInfo.instance = this;
-        this.game = game;
-        logger = logger_;
+        instance = this;
+        this.pluginContainer = pluginContainer;
+        this.logger = logger;
         this.path = path;
-    }
 
-    @Listener
-    public void init(GameInitializationEvent event) {
         loadConfig();
-        registerCommand();
     }
 
     @Listener
-    public void onServerStart(GameStartedServerEvent event) {
+    public void onRegisterCommands(final RegisterCommandEvent<Command.Parameterized> event) {
+    }
+
+    @Listener
+    public void onServerStarting(final StartingEngineEvent<Server> event) {
         registerListeners();
         registerTasks();
     }
 
+    @Listener
+    public void onRefreshGameEvent(RefreshGameEvent refreshGameEvent) {
+        try {
+            config.loadConfiguration();
+            logger.info("Configurations reloaded successfully!");
+
+        } catch (IOException e) {
+            logger.warn("Error while reloading configurations!");
+
+            e.printStackTrace();
+        }
+
+        updateTabInfo();
+    }
+
     private void registerListeners() {
-        Sponge.getEventManager().registerListener(
-                this, ClientConnectionEvent.Join.class, new PlayerJoinListener());
+        Sponge.eventManager().registerListeners(pluginContainer, new PlayerJoinListener());
     }
 
     private void registerTasks() {
-        Task.builder()
+        Task task = Task.builder()
                 .execute(new Runnable() {
                     @Override
                     public void run() {
                         updateTabInfo();
                     }
                 })
-        .intervalTicks(40)
-        .async()
-        .submit(this);
+                .interval(Ticks.of(40))
+                .plugin(pluginContainer)
+                .build();
+
+        Sponge.asyncScheduler().submit(task);
     }
 
     private void loadConfig() {
@@ -92,80 +106,59 @@ public class TabInfo {
         }
     }
 
-    private void registerCommand() {
-        CommandSpec reload = CommandSpec.builder()
-                .permission(Permissions.COMMAND_RELOAD)
-                .executor(new Reload())
-                .build();
-
-        CommandSpec tab = CommandSpec.builder()
-                .child(reload, "reload")
-                .build();
-
-        game.getCommandManager().register(this, tab, "tabinfo");
-    }
-
-    public synchronized void updateTabInfo() {
+    public void updateTabInfo() {
 
         headerText = textFromLegacy(config.HEADER_CONTENT);
 
-        footerText = Text.of("\n");
+        footerText = Component.text("\n");
         if (config.FOOTER_ONLINE_ENABLED) {
-            footerText = footerText.concat(
-                    textFromLegacy("  " + config.FOOTER_ONLINE_CONTENT + Sponge.getServer().getOnlinePlayers().size() + "  "));
+            footerText = footerText.append(
+                    textFromLegacy("  " + config.FOOTER_ONLINE_CONTENT + Sponge.server().onlinePlayers().size() + "  "));
         }
 
         if (config.FOOTER_TPS_ENABLED) {
-            footerText = footerText.concat(
-                    textFromLegacy("  " + config.FOOTER_TPS_CONTENT + Sponge.getServer().getTicksPerSecond() + "  "));
+            footerText = footerText.append(
+                    textFromLegacy("  " + config.FOOTER_TPS_CONTENT + Sponge.server().ticksPerSecond() + "  "));
         }
 
-        Sponge.getServer().getOnlinePlayers().forEach(player -> {
-            player.getTabList()
+        Sponge.server().onlinePlayers().forEach(player -> {
+            player.tabList()
                     .setHeaderAndFooter(
                             headerText,
-                            getFooterText(player));
+                            getFooterTextForPlayer(player));
         });
     }
 
-    private Text textFromLegacy(String legacy) {
-        return TextSerializers.FORMATTING_CODE.deserializeUnchecked(legacy);
+    private TextComponent textFromLegacy(String legacy) {
+        return PlainTextComponentSerializer.plainText().deserialize(legacy);
     }
 
     public static TabInfo getInstance() {
         return instance;
     }
 
-    public Text getHeaderText() {
+    public TextComponent getHeaderText() {
         return headerText;
     }
 
-    public Text getFooterText(Player player) {
+    public TextComponent getFooterTextForPlayer(ServerPlayer serverPlayer) {
 
-        Text newFooterText = footerText;
+        TextComponent newFooterText = footerText;
         if (config.FOOTER_PING_ENABLED) {
             newFooterText =  newFooterText.
-                    concat(textFromLegacy("  " + config.FOOTER_PING_CONTENT + player.getConnection().getLatency() + config.FOOTER_PING_MS_CONTENT + "  "));
+                    append(textFromLegacy("  " + config.FOOTER_PING_CONTENT + serverPlayer.connection().latency() + config.FOOTER_PING_MS_CONTENT + "  "));
         }
 
         if (config.FOOTER_WORLD_ENABLED) {
-            newFooterText = newFooterText.concat(
-                    textFromLegacy(config.FOOTER_WORLD_CONTENT + player.getWorld().getName()));
+            newFooterText = newFooterText.append(
+                    textFromLegacy(config.FOOTER_WORLD_CONTENT + serverPlayer.worldBorder().toString()));
         }
 
         if (config.FOOTER_CUSTOM_ENABLED) {
-            newFooterText = newFooterText.concat(
+            newFooterText = newFooterText.append(
                     textFromLegacy(config.FOOTER_CUSTOM_CONTENT));
         }
 
         return newFooterText;
-    }
-
-    public Logger getLogger() {
-        return logger;
-    }
-
-    public Config getConfig() {
-        return config;
     }
 }

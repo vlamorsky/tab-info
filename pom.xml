@@ -6,7 +6,7 @@
 
     <groupId>me.vlamorsky.spongeplugin</groupId>
     <artifactId>tabinfo</artifactId>
-    <version>1.0.2</version>
+    <version>1.1.0</version>
     <name>tab-info</name>
     <packaging>jar</packaging>
 
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.spongepowered</groupId>
             <artifactId>spongeapi</artifactId>
-            <version>7.1.0</version>
+            <version>8.0.0</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
